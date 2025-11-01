@@ -1,4 +1,3 @@
-library(plotly)
 library(MASS)
 
 generate_shell_clusters <- function(n_shells, k_per_shell, max_radius, noise_sd = 0.1) {
@@ -64,30 +63,68 @@ sample_data <- generate_shell_clusters(
   noise_sd = 0.1
 )
 
-fig <- plot_ly(
-  x = sample_data$data[, 1],
-  y = sample_data$data[, 2],
-  z = sample_data$data[, 3],
-  type = "scatter3d",
-  mode = "markers",
-  marker = list(
-    size = 3,
-    color = sample_data$labels,
-    colorscale = "Viridis",
-    showscale = TRUE
-  )
-) %>%
-  layout(
-    title = "Concentric Shell Clusters (Ground Truth)",
-    scene = list(
-      xaxis = list(title = "X"),
-      yaxis = list(title = "Y"),
-      zaxis = list(title = "Z")
-    )
-  )
+fig_dir <- file.path("output", "figures")
+dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
 
-print(fig)
+cat("Creating 3D visualization of concentric shells...\n")
+png(
+  file.path(fig_dir, "Concentric Shell Clusters.png"),
+  width = 800,
+  height = 800
+)
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
 
+colors <- c("#440154", "#31688e", "#35b779", "#fde724")
+
+plot(
+  sample_data$data[, 1],
+  sample_data$data[, 2],
+  col = colors[sample_data$labels],
+  pch = 16,
+  cex = 0.5,
+  xlab = "X",
+  ylab = "Y",
+  main = "XY Projection"
+)
+grid()
+
+plot(
+  sample_data$data[, 1],
+  sample_data$data[, 3],
+  col = colors[sample_data$labels],
+  pch = 16,
+  cex = 0.5,
+  xlab = "X",
+  ylab = "Z",
+  main = "XZ Projection"
+)
+grid()
+
+plot(
+  sample_data$data[, 2],
+  sample_data$data[, 3],
+  col = colors[sample_data$labels],
+  pch = 16,
+  cex = 0.5,
+  xlab = "Y",
+  ylab = "Z",
+  main = "YZ Projection"
+)
+grid()
+
+plot.new()
+legend(
+  "center",
+  legend = paste("Shell", 1:4),
+  col = colors,
+  pch = 16,
+  cex = 1.2,
+  title = "Concentric Shell Clusters"
+)
+
+dev.off()
+
+cat("Running spectral clustering simulation...\n")
 max_radius_values <- seq(10, 0, by = -0.5)
 estimated_clusters <- numeric(length(max_radius_values))
 
@@ -114,69 +151,42 @@ for (i in seq_along(max_radius_values)) {
               max_r, estimated_clusters[i]))
 }
 
-plot_data <- data.frame(
-  max_radius = max_radius_values,
-  estimated_clusters = estimated_clusters
-)
-
-fig_results <- plot_ly(
-  plot_data,
-  x = ~max_radius,
-  y = ~estimated_clusters,
-  type = "scatter",
-  mode = "lines+markers",
-  marker = list(size = 8),
-  line = list(width = 2)
-) %>%
-  add_trace(
-    x = max_radius_values,
-    y = rep(4, length(max_radius_values)),
-    mode = "lines",
-    name = "True number of clusters",
-    line = list(dash = "dash", color = "red", width = 2)
-  ) %>%
-  layout(
-    title = "Spectral Clustering Performance vs Maximum Radius",
-    xaxis = list(title = "Maximum Radius"),
-    yaxis = list(title = "Estimated Number of Clusters"),
-    showlegend = TRUE
-  )
-
-print(fig_results)
-
-cat("\nSaving plots to output/figures...\n")
-
-fig_dir <- file.path("output", "figures")
-dir.create(fig_dir, recursive = TRUE, showWarnings = FALSE)
-
-if (!requireNamespace("webshot2", quietly = TRUE)) {
-  cat("Installing webshot2 for PNG export...\n")
-  install.packages("webshot2", repos = "http://cran.us.r-project.org")
-}
-
-library(webshot2)
-
-temp_dir <- tempdir()
-temp_file1 <- file.path(temp_dir, "temp_plot1.html")
-temp_file2 <- file.path(temp_dir, "temp_plot2.html")
-
-htmlwidgets::saveWidget(fig, temp_file1, selfcontained = TRUE)
-webshot2::webshot(
-  temp_file1,
-  file.path(fig_dir, "Concentric Shell Clusters.png"),
-  vwidth = 800,
-  vheight = 600
-)
-
-htmlwidgets::saveWidget(fig_results, temp_file2, selfcontained = TRUE)
-webshot2::webshot(
-  temp_file2,
+cat("\nCreating performance plot...\n")
+png(
   file.path(fig_dir, "Spectral Clustering Performance vs Maximum Radius.png"),
-  vwidth = 800,
-  vheight = 600
+  width = 800,
+  height = 600
 )
 
-cat("Plots saved successfully to:", fig_dir, "\n")
+plot(
+  max_radius_values,
+  estimated_clusters,
+  type = "b",
+  pch = 19,
+  col = "blue",
+  lwd = 2,
+  xlab = "Maximum Radius",
+  ylab = "Estimated Number of Clusters",
+  main = "Spectral Clustering Performance vs Maximum Radius",
+  ylim = c(0, 5),
+  cex.main = 1.2
+)
+
+abline(h = 4, col = "red", lwd = 2, lty = 2)
+grid()
+
+legend(
+  "bottomright",
+  legend = c("Estimated k", "True k = 4"),
+  col = c("blue", "red"),
+  lty = c(1, 2),
+  lwd = 2,
+  pch = c(19, NA)
+)
+
+dev.off()
+
+cat("\nPlots saved successfully to:", fig_dir, "\n")
 cat("  - Concentric Shell Clusters.png\n")
 cat("  - Spectral Clustering Performance vs Maximum Radius.png\n\n")
 
