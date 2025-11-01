@@ -9,32 +9,21 @@ export RSTUDIO_PANDOC = /Applications/RStudio.app/Contents/Resources/app/quarto/
 OUT_DIR = output
 FIG_DIR = $(OUT_DIR)/figures
 
-SRC_SPECTRAL = Spectral Clustering on Concentric Shells.R
 SRC_GAP = Clusters and the Gap Statistic.R
+SRC_SPECTRAL = Spectral Clustering on Concentric Shells.R
 
+GAP_PLOT = $(FIG_DIR)/Gap_Statistic_Simulation.png
 SHELL_PLOT = $(FIG_DIR)/Concentric Shell Clusters.png
 PERFORMANCE_PLOT = $(FIG_DIR)/Spectral Clustering Performance vs Maximum Radius.png
-GAP_PLOT = $(FIG_DIR)/Gap_Statistic_Simulation.png
 
 .PHONY: all
-all: install-deps setup spectral gap report
+all: install-deps setup gap spectral report
 
 .PHONY: setup
 setup:
 	@echo "=== Setting up project directories ==="
 	@mkdir -p $(FIG_DIR)
 	@echo "Directories ready."
-
-.PHONY: spectral
-spectral: setup
-	@echo "=== Running spectral clustering on concentric shells ==="
-	@$(R) "$(SRC_SPECTRAL)"
-	@if [ -f "$(SHELL_PLOT)" ] && [ -f "$(PERFORMANCE_PLOT)" ]; then \
-		echo "Spectral clustering plots saved successfully!"; \
-	else \
-		echo "ERROR: Plots were not generated!"; \
-		exit 1; \
-	fi
 
 .PHONY: gap
 gap: setup
@@ -47,23 +36,16 @@ gap: setup
 		exit 1; \
 	fi
 
-.PHONY: report
-report: spectral gap
-	@echo "=== Generating project summary ==="
-	@{ \
-		echo "Project Summary"; \
-		echo "================"; \
-		echo ""; \
-		echo "Task 1: Gap Statistic Analysis"; \
-		echo "  Output: $(GAP_PLOT)"; \
-		echo ""; \
-		echo "Task 2: Spectral Clustering on Concentric Shells"; \
-		echo "  Output: $(SHELL_PLOT)"; \
-		echo "  Output: $(PERFORMANCE_PLOT)"; \
-		echo ""; \
-		echo "All analyses completed successfully!"; \
-	} > $(OUT_DIR)/summary.txt
-	@cat $(OUT_DIR)/summary.txt
+.PHONY: spectral
+spectral: setup
+	@echo "=== Running spectral clustering on concentric shells ==="
+	@$(R) "$(SRC_SPECTRAL)"
+	@if [ -f "$(SHELL_PLOT)" ] && [ -f "$(PERFORMANCE_PLOT)" ]; then \
+		echo "Spectral clustering plots saved successfully!"; \
+	else \
+		echo "ERROR: Plots were not generated!"; \
+		exit 1; \
+	fi
 
 .PHONY: clean
 clean:
